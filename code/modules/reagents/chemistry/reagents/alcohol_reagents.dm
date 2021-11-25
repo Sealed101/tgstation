@@ -2658,3 +2658,26 @@ All effects don't start immediately, but rather get worse over time; the rate is
 	if(prophet_trauma)
 		QDEL_NULL(prophet_trauma)
 	return ..()
+
+/datum/reagent/consumable/ethanol/crimson_sunset
+	name = "Crimson Sunset"
+	description = "A smooth drink that reminds you of the good old days."
+	color = "#3742a7"
+	boozepwr = 55 //kamikaze gets smoothed out
+	taste_description = "a calm breeze over paradise"
+	glass_icon_state = "crimson_sunset"
+	glass_name = "Crimson Sunset"
+	glass_desc = "Down the setting sun in one go from this twin glass. Infamous for being forbidden from being served on every airline in existence."
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	overdose_threshold = 40
+	var/datum/brain_trauma/mild/phobia/planes/od_trauma
+
+/datum/reagent/consumable/ethanol/crimson_sunset/overdose_start(mob/living/carbon/imbiber)
+	if(prob(30)) //making it not guaranteed upon OD will hopefully keep the powergamers away from using it as a stun chem
+		od_trauma = new()
+		imbiber.gain_trauma(od_trauma, TRAUMA_RESILIENCE_BASIC)
+
+/datum/reagent/consumable/ethanol/crimson_sunset/on_mob_end_metabolize(mob/living/carbon/imbiber)
+	if(od_trauma)
+		QDEL_NULL(od_trauma)
+	return ..()

@@ -391,5 +391,15 @@
 	"shell",
 	"dart",
 	"armory"
+	],
+"planes": [
+	"plane",
+	"fly",
+	"flight",
+	"airline",
+	"airplane",
+	"aviators",
+	"pilot",
+	"skyscraper"
 	]
 }

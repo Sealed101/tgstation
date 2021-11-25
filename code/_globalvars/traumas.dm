@@ -46,6 +46,7 @@ GLOBAL_LIST_INIT(phobia_regexes, list(
 	"spiders" = construct_phobia_regex("spiders"),
 	"strangers" = construct_phobia_regex("strangers"),
 	"the supernatural" = construct_phobia_regex("the supernatural"),
+	"planes" = construct_phobia_regex("planes")
 ))
 
 GLOBAL_LIST_INIT(phobia_mobs, list(
@@ -248,6 +249,8 @@ GLOBAL_LIST_INIT(phobia_objs, list(
 		/obj/item/clothing/mask/gas/space_ninja, /obj/item/clothing/shoes/space_ninja, /obj/item/clothing/gloves/space_ninja, /obj/item/vibro_weapon,
 		/obj/item/nullrod/scythe/vibro, /obj/item/energy_katana, /obj/item/toy/katana, /obj/item/nullrod/claymore/katana, /obj/structure/window/paperframe, /obj/structure/mineral_door/paperframe
 	)),
+
+	"planes" = typecacheof(list(/obj/item/paperplane, /obj/item/clothing/glasses/hud/spacecop, /obj/item/clothing/suit/jacket)) //aviation apparel also triggers this
 ))
 
 GLOBAL_LIST_INIT(phobia_turfs, list(

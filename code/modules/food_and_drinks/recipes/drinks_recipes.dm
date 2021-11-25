@@ -690,3 +690,8 @@
 	results = list(/datum/reagent/consumable/ethanol/the_juice = 5)
 	required_reagents = list(/datum/reagent/consumable/mushroom_tea = 1, /datum/reagent/bluespace = 1, /datum/reagent/toxin/mindbreaker = 1, /datum/reagent/consumable/ethanol/neurotoxin = 1, /datum/reagent/medicine/morphine = 1)
 	mix_message = "The liquids all swirl together into a deep purple."
+
+/datum/chemical_reaction/drink/sundowner
+	results = list(/datum/reagent/consumable/ethanol/crimson_sunset = 5)
+	required_reagents = list(/datum/reagent/consumable/ethanol/manhattan = 1, /datum/reagent/consumable/ethanol/kamikaze = 2, /datum/reagent/consumable/ethanol/triple_sec = 2)
+	mix_message = "The mixture swirls in reddish hues."
