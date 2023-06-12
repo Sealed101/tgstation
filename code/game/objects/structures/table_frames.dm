@@ -47,6 +47,13 @@
 				return
 			make_new_table(material.tableVariant)
 		else if(istype(material, /obj/item/stack/sheet))
+			//list of materials in the stack of sheets. will be applied as custom_materials in table creation
+			var/list/material_list = list()
+			if(material.material_type)
+				material_list[material.material_type] = SHEET_MATERIAL_AMOUNT
+			if(!length(material_list))
+				to_chat(user, span_warning("This material can't be used to make a table!"))
+				return
 			if(material.get_amount() < 1)
 				to_chat(user, span_warning("You need one sheet to do this!"))
 				return
@@ -56,9 +63,6 @@
 			to_chat(user, span_notice("You start adding [material] to [src]..."))
 			if(!do_after(user, 2 SECONDS, target = src) || !material.use(1) || (locate(/obj/structure/table) in loc))
 				return
-			var/list/material_list = list()
-			if(material.material_type)
-				material_list[material.material_type] = SHEET_MATERIAL_AMOUNT
 			make_new_table(/obj/structure/table/greyscale, material_list)
 		return
 	return ..()
