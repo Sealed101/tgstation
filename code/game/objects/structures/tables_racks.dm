@@ -23,20 +23,24 @@
 	pass_flags_self = PASSTABLE | LETPASSTHROW
 	layer = TABLE_LAYER
 	obj_flags = CAN_BE_HIT | IGNORE_DENSITY
-	var/frame = /obj/structure/table_frame
-	var/framestack = /obj/item/stack/rods
-	var/glass_shard_type = /obj/item/shard
-	var/buildstack = /obj/item/stack/sheet/iron
-	var/busy = FALSE
-	var/buildstackamount = 1
-	var/framestackamount = 2
-	var/deconstruction_ready = 1
-	custom_materials = list(/datum/material/iron =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT)
 	max_integrity = 100
 	integrity_failure = 0.33
 	smoothing_flags = SMOOTH_BITMASK
 	smoothing_groups = SMOOTH_GROUP_TABLES
 	canSmoothWith = SMOOTH_GROUP_TABLES
+	///The material used in constructing this table
+	var/buildstack = /obj/item/stack/sheet/iron
+	///The amount of material used in constructing this table
+	var/buildstackamount = 1
+	///Whether this table can be deconstructed or not (see - welding a reinforced table before unscrewing it)
+	var/deconstruction_ready = TRUE
+	///The table frame type used in this table's construction
+	var/frame = /obj/structure/table_frame
+	///The table frame's material type
+	var/framestack = /obj/item/stack/rods
+	///The table frame's material amount
+	var/framestackamount = 2
 
 /obj/structure/table/Initialize(mapload, _buildstack)
 	. = ..()
@@ -151,6 +155,7 @@
 								span_notice("[user] places [pushed_mob] onto [src]."))
 	log_combat(user, pushed_mob, "places", null, "onto [src]")
 
+///Smacks the victim onto the table, knocking them down and dealing brute/stamina damage
 /obj/structure/table/proc/tablepush(mob/living/user, mob/living/pushed_mob)
 	if(HAS_TRAIT(user, TRAIT_PACIFISM))
 		to_chat(user, span_danger("Throwing [pushed_mob] onto the table might hurt them!"))
@@ -178,6 +183,7 @@
 	log_combat(user, pushed_mob, "tabled", null, "onto [src]")
 	pushed_mob.add_mood_event("table", /datum/mood_event/table)
 
+///Smashes the victim's limb into the table for large amounts of limb damage. This damages the table.
 /obj/structure/table/proc/tablelimbsmash(mob/living/user, mob/living/pushed_mob)
 	pushed_mob.Knockdown(30)
 	var/obj/item/bodypart/banged_limb = pushed_mob.get_bodypart(user.zone_selected) || pushed_mob.get_bodypart(BODY_ZONE_HEAD)
@@ -209,7 +215,7 @@
 	to_chat(user, span_notice("You start deconstructing [src]..."))
 	if(tool.use_tool(src, user, 4 SECONDS, volume=50))
 		playsound(loc, 'sound/items/deconstruct.ogg', 50, TRUE)
-		deconstruct(TRUE, 1)
+		deconstruct(TRUE, TRUE)
 	return TOOL_ACT_TOOLTYPE_SUCCESS
 
 /obj/structure/table/attackby(obj/item/I, mob/living/user, params)
@@ -286,7 +292,7 @@
 /obj/structure/table/proc/AfterPutItemOnTable(obj/item/I, mob/living/user)
 	return
 
-/obj/structure/table/deconstruct(disassembled = TRUE, wrench_disassembly = 0)
+/obj/structure/table/deconstruct(disassembled = TRUE, wrench_disassembly = FALSE)
 	if(!(flags_1 & NODECONSTRUCT_1))
 		var/turf/T = get_turf(src)
 		if(buildstack)
@@ -299,7 +305,7 @@
 			new frame(T)
 		else
 			new framestack(T, framestackamount)
-	qdel(src)
+	return ..()
 
 /obj/structure/table/rcd_vals(mob/user, obj/item/construction/rcd/the_rcd)
 	switch(the_rcd.mode)
@@ -382,7 +388,7 @@
 	if(has_gravity())
 		playsound(src, 'sound/effects/roll.ogg', 100, TRUE)
 /*
- * Glass tables
+ * Glass tables: fragile and break easily when a mob finds itself on a table
  */
 /obj/structure/table/glass
 	name = "glass table"
@@ -390,13 +396,15 @@
 	icon = 'icons/obj/smooth_structures/glass_table.dmi'
 	icon_state = "glass_table-0"
 	base_icon_state = "glass_table"
-	custom_materials = list(/datum/material/glass =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/glass = SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/glass
 	smoothing_groups = SMOOTH_GROUP_GLASS_TABLES
 	canSmoothWith = SMOOTH_GROUP_GLASS_TABLES
 	max_integrity = 70
 	resistance_flags = ACID_PROOF
 	armor_type = /datum/armor/table_glass
+	///The type of shard this table drops upon shattering
+	var/glass_shard_type = /obj/item/shard
 
 /datum/armor/table_glass
 	fire = 80
@@ -443,14 +451,12 @@
 	victim.Paralyze(100)
 	qdel(src)
 
-/obj/structure/table/glass/deconstruct(disassembled = TRUE, wrench_disassembly = 0)
+/obj/structure/table/glass/deconstruct(disassembled = TRUE, wrench_disassembly = FALSE)
 	if(!(flags_1 & NODECONSTRUCT_1))
 		if(disassembled)
-			..()
-			return
+			return ..()
 		else
-			var/turf/T = get_turf(src)
-			playsound(T, SFX_SHATTER, 50, TRUE)
+			playsound(get_turf(src), SFX_SHATTER, 50, TRUE)
 
 			new frame(loc)
 			new glass_shard_type(loc)
@@ -466,7 +472,7 @@
 	icon = 'icons/obj/smooth_structures/plasmaglass_table.dmi'
 	icon_state = "plasmaglass_table-0"
 	base_icon_state = "plasmaglass_table"
-	custom_materials = list(/datum/material/alloy/plasmaglass =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/alloy/plasmaglass = SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/plasmaglass
 	glass_shard_type = /obj/item/shard/plasma
 	max_integrity = 100
@@ -484,14 +490,16 @@
 	frame = /obj/structure/table_frame/wood
 	framestack = /obj/item/stack/sheet/mineral/wood
 	buildstack = /obj/item/stack/sheet/mineral/wood
+	custom_materials = list(/datum/material/wood = SHEET_MATERIAL_AMOUNT)
 	resistance_flags = FLAMMABLE
 	max_integrity = 70
 	smoothing_groups = SMOOTH_GROUP_WOOD_TABLES //Don't smooth with SMOOTH_GROUP_TABLES
 	canSmoothWith = SMOOTH_GROUP_WOOD_TABLES
 
+//Basic wooden tables are Nar-Nar friendly, but She hates gambling. Poker subtype gets turned into a basic wooden table
 /obj/structure/table/wood/narsie_act(total_override = TRUE)
 	if(!total_override)
-		..()
+		return ..()
 
 /obj/structure/table/wood/poker //No specialties, Just a mapping object.
 	name = "gambling table"
@@ -502,7 +510,7 @@
 	buildstack = /obj/item/stack/tile/carpet
 
 /obj/structure/table/wood/poker/narsie_act()
-	..(FALSE)
+	return ..(FALSE)
 
 /obj/structure/table/wood/fancy
 	name = "fancy table"
@@ -515,7 +523,8 @@
 	buildstack = /obj/item/stack/tile/carpet
 	smoothing_groups = SMOOTH_GROUP_FANCY_WOOD_TABLES //Don't smooth with SMOOTH_GROUP_TABLES or SMOOTH_GROUP_WOOD_TABLES
 	canSmoothWith = SMOOTH_GROUP_FANCY_WOOD_TABLES
-	var/smooth_icon = 'icons/obj/smooth_structures/fancy_table.dmi' // see Initialize()
+	///Icon override, see Initialize()
+	var/smooth_icon = 'icons/obj/smooth_structures/fancy_table.dmi'
 
 /obj/structure/table/wood/fancy/Initialize(mapload)
 	. = ..()
@@ -580,7 +589,7 @@
 	smooth_icon = 'icons/obj/smooth_structures/fancy_table_royalblue.dmi'
 
 /*
- * Reinforced tables
+ * Reinforced tables: tough and slower to deconstruct
  */
 /obj/structure/table/reinforced
 	name = "reinforced table"
@@ -590,6 +599,7 @@
 	base_icon_state = "reinforced_table"
 	deconstruction_ready = 0
 	buildstack = /obj/item/stack/sheet/plasteel
+	custom_materials = list(/datum/material/alloy/plasteel = SHEET_MATERIAL_AMOUNT)
 	max_integrity = 200
 	integrity_failure = 0.25
 	armor_type = /datum/armor/table_reinforced
@@ -647,6 +657,7 @@
 	base_icon_state = "brass_table"
 	resistance_flags = FIRE_PROOF | ACID_PROOF
 	buildstack = /obj/item/stack/sheet/bronze
+	custom_materials = list(/datum/material/bronze = SHEET_MATERIAL_AMOUNT)
 	smoothing_groups = SMOOTH_GROUP_BRONZE_TABLES //Don't smooth with SMOOTH_GROUP_TABLES
 	canSmoothWith = SMOOTH_GROUP_BRONZE_TABLES
 
@@ -660,7 +671,7 @@
 	icon = 'icons/obj/smooth_structures/rglass_table.dmi'
 	icon_state = "rglass_table-0"
 	base_icon_state = "rglass_table"
-	custom_materials = list(/datum/material/glass =SHEET_MATERIAL_AMOUNT, /datum/material/iron =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/glass = SHEET_MATERIAL_AMOUNT, /datum/material/iron = SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/rglass
 	max_integrity = 150
 
@@ -670,7 +681,7 @@
 	icon = 'icons/obj/smooth_structures/rplasmaglass_table.dmi'
 	icon_state = "rplasmaglass_table-0"
 	base_icon_state = "rplasmaglass_table"
-	custom_materials = list(/datum/material/alloy/plasmaglass =SHEET_MATERIAL_AMOUNT, /datum/material/iron =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/alloy/plasmaglass = SHEET_MATERIAL_AMOUNT, /datum/material/iron = SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/plasmarglass
 
 /obj/structure/table/reinforced/titaniumglass
@@ -679,7 +690,7 @@
 	icon = 'icons/obj/smooth_structures/titaniumglass_table.dmi'
 	icon_state = "titaniumglass_table-0"
 	base_icon_state = "titaniumglass_table"
-	custom_materials = list(/datum/material/alloy/titaniumglass =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/alloy/titaniumglass = SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/titaniumglass
 	max_integrity = 250
 
@@ -689,7 +700,7 @@
 	icon = 'icons/obj/smooth_structures/plastitaniumglass_table.dmi'
 	icon_state = "plastitaniumglass_table-0"
 	base_icon_state = "plastitaniumglass_table"
-	custom_materials = list(/datum/material/alloy/plastitaniumglass =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/alloy/plastitaniumglass = SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/plastitaniumglass
 	max_integrity = 300
 
@@ -709,7 +720,7 @@
 	can_buckle = 1
 	buckle_lying = NO_BUCKLE_LYING
 	buckle_requires_restraints = TRUE
-	custom_materials = list(/datum/material/silver =SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/silver = SHEET_MATERIAL_AMOUNT)
 	var/mob/living/carbon/patient = null
 	var/obj/machinery/computer/operating/computer = null
 
@@ -864,7 +875,7 @@
 	icon_state = "rack_parts"
 	inhand_icon_state = "rack_parts"
 	flags_1 = CONDUCT_1
-	custom_materials = list(/datum/material/iron=SHEET_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT)
 	var/building = FALSE
 
 /obj/item/rack_parts/attackby(obj/item/W, mob/user, params)
