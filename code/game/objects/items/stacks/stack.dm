@@ -52,7 +52,7 @@
 	/// Does this stack require a unique girder in order to make a wall?
 	var/has_unique_girder = FALSE
 	/// What typepath table we create from this stack
-	var/obj/structure/table/tableVariant
+	var/obj/structure/table/table_variant
 	/// What typepath stairs do we create from this stack
 	var/obj/structure/stairs/stairs_type
 	/// If TRUE, we'll use a radial instead when displaying recipes

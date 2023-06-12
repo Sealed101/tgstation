@@ -34,7 +34,7 @@
 /obj/structure/table_frame/attackby(obj/item/attack_item, mob/user, params)
 	if(isstack(attack_item)) //check for non-sheet-material frame stack (e.g. carpets)
 		var/obj/item/stack/material = attack_item
-		if(material.tableVariant) //any tables that aren't using the greyscale base for their sprite go here (e.g. plasteel/glass)
+		if(material.table_variant) //any tables that aren't using the greyscale base for their sprite go here (e.g. plasteel/glass)
 			if(material.get_amount() < 1)
 				to_chat(user, span_warning("You need one [material.name] sheet to do this!"))
 				return
@@ -44,7 +44,7 @@
 			to_chat(user, span_notice("You start adding [material.name] to [src]..."))
 			if(!do_after(user, 2 SECONDS, target = src) || !material.use(1) || (locate(/obj/structure/table) in drop_location()))
 				return
-			make_new_table(material.tableVariant)
+			make_new_table(material.table_variant)
 		else if(istype(material, /obj/item/stack/sheet)) //minerals, wood and what have you
 			//list of materials in the stack of sheets. will be applied as custom_materials in table creation
 			var/list/material_list = list()
