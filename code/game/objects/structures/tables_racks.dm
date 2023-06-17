@@ -33,7 +33,7 @@
 	var/buildstack = /obj/item/stack/sheet/iron
 	///The amount of material used in constructing this table
 	var/buildstackamount = 1
-	///Whether this table can be deconstructed or not (see - welding a reinforced table before unscrewing it)
+	///Whether this table can be currently deconstructed with a screwdriver or not (see - welding a reinforced table before unscrewing it)
 	var/deconstruction_ready = TRUE
 	///The table frame type used in this table's construction
 	var/frame = /obj/structure/table_frame
@@ -92,9 +92,9 @@
 		QUEUE_SMOOTH_NEIGHBORS(src)
 
 /obj/structure/table/narsie_act()
-	var/atom/A = loc
+	. = ..()
+	new /obj/structure/table/wood(get_turf(src))
 	qdel(src)
-	new /obj/structure/table/wood(A)
 
 /obj/structure/table/attack_paw(mob/user, list/modifiers)
 	return attack_hand(user, modifiers)
@@ -149,7 +149,7 @@
 		. = . || (caller.pass_flags & PASSTABLE)
 
 /obj/structure/table/proc/tableplace(mob/living/user, mob/living/pushed_mob)
-	pushed_mob.forceMove(loc)
+	pushed_mob.forceMove(get_turf(src))
 	pushed_mob.set_resting(TRUE, TRUE)
 	pushed_mob.visible_message(span_notice("[user] places [pushed_mob] onto [src]."), \
 								span_notice("[user] places [pushed_mob] onto [src]."))
@@ -164,8 +164,8 @@
 	if(!(pushed_mob.pass_flags & PASSTABLE))
 		added_passtable = TRUE
 		pushed_mob.pass_flags |= PASSTABLE
-	for (var/obj/obj in user.loc.contents)
-		if(!obj.CanAllowThrough(pushed_mob))
+	for(var/obj/object in user.loc.contents) //disallow tabling through impassable objects
+		if(!object.CanAllowThrough(pushed_mob))
 			return
 	pushed_mob.Move(src.loc)
 	if(added_passtable)
@@ -205,7 +205,7 @@
 	if(flags_1 & NODECONSTRUCT_1 || !deconstruction_ready)
 		return FALSE
 	to_chat(user, span_notice("You start disassembling [src]..."))
-	if(tool.use_tool(src, user, 2 SECONDS, volume=50))
+	if(tool.use_tool(src, user, 2 SECONDS, volume = 50))
 		deconstruct(TRUE)
 	return TOOL_ACT_TOOLTYPE_SUCCESS
 
@@ -218,30 +218,30 @@
 		deconstruct(TRUE, TRUE)
 	return TOOL_ACT_TOOLTYPE_SUCCESS
 
-/obj/structure/table/attackby(obj/item/I, mob/living/user, params)
+/obj/structure/table/attackby(obj/item/attack_item, mob/living/user, params)
 	var/list/modifiers = params2list(params)
 
-	if(istype(I, /obj/item/storage/bag/tray))
-		var/obj/item/storage/bag/tray/T = I
-		if(T.contents.len > 0) // If the tray isn't empty
-			for(var/x in T.contents)
+	if(istype(attack_item, /obj/item/storage/bag/tray))
+		var/obj/item/storage/bag/tray/unloaded_tray = attack_item
+		if(unloaded_tray.contents.len > 0) // If the tray isn't empty
+			for(var/x in unloaded_tray.contents)
 				var/obj/item/item = x
 				AfterPutItemOnTable(item, user)
-			I.atom_storage.remove_all(drop_location())
+			attack_item.atom_storage.remove_all(drop_location())
 			user.visible_message(span_notice("[user] empties [I] on [src]."))
 			return
 		// If the tray IS empty, continue on (tray will be placed on the table like other items)
 
-	if(istype(I, /obj/item/toy/cards/deck))
-		var/obj/item/toy/cards/deck/dealer_deck = I
+	if(istype(attack_item, /obj/item/toy/cards/deck))
+		var/obj/item/toy/cards/deck/dealer_deck = attack_item
 		if(dealer_deck.wielded) // deal a card facedown on the table
 			var/obj/item/toy/singlecard/card = dealer_deck.draw(user)
 			if(card)
 				attackby(card, user, params)
 			return
 
-	if(istype(I, /obj/item/riding_offhand))
-		var/obj/item/riding_offhand/riding_item = I
+	if(istype(attack_item, /obj/item/riding_offhand))
+		var/obj/item/riding_offhand/riding_item = attack_item
 		var/mob/living/carried_mob = riding_item.rider
 		if(carried_mob == user) //Piggyback user.
 			return
@@ -264,15 +264,15 @@
 				tableplace(user, carried_mob)
 		return TRUE
 
-	if(!user.combat_mode && !(I.item_flags & ABSTRACT))
-		if(user.transferItemToLoc(I, drop_location(), silent = FALSE))
+	if(!user.combat_mode && !(attack_item.item_flags & ABSTRACT))
+		if(user.transferItemToLoc(attack_item, drop_location(), silent = FALSE))
 			//Center the icon where the user clicked.
 			if(!LAZYACCESS(modifiers, ICON_X) || !LAZYACCESS(modifiers, ICON_Y))
 				return
 			//Clamp it so that the icon never moves more than 16 pixels in either direction (thus leaving the table turf)
-			I.pixel_x = clamp(text2num(LAZYACCESS(modifiers, ICON_X)) - 16, -(world.icon_size/2), world.icon_size/2)
-			I.pixel_y = clamp(text2num(LAZYACCESS(modifiers, ICON_Y)) - 16, -(world.icon_size/2), world.icon_size/2)
-			AfterPutItemOnTable(I, user)
+			attack_item.pixel_x = clamp(text2num(LAZYACCESS(modifiers, ICON_X)) - 16, -(world.icon_size/2), world.icon_size/2)
+			attack_item.pixel_y = clamp(text2num(LAZYACCESS(modifiers, ICON_Y)) - 16, -(world.icon_size/2), world.icon_size/2)
+			AfterPutItemOnTable(attack_item, user)
 			return TRUE
 	else
 		return ..()
@@ -289,22 +289,23 @@
 	..()
 	return SECONDARY_ATTACK_CONTINUE_CHAIN
 
+///TODO refactor this to use signals
 /obj/structure/table/proc/AfterPutItemOnTable(obj/item/I, mob/living/user)
 	return
 
 /obj/structure/table/deconstruct(disassembled = TRUE, wrench_disassembly = FALSE)
 	if(!(flags_1 & NODECONSTRUCT_1))
-		var/turf/T = get_turf(src)
+		var/turf/table_turf = get_turf(src)
 		if(buildstack)
-			new buildstack(T, buildstackamount)
+			new buildstack(table_turf, buildstackamount)
 		else
 			for(var/i in custom_materials)
-				var/datum/material/M = i
-				new M.sheet_type(T, FLOOR(custom_materials[M] / SHEET_MATERIAL_AMOUNT, 1))
+				var/datum/material/table_material = i
+				new table_material.sheet_type(table_turf, FLOOR(custom_materials[table_material] / SHEET_MATERIAL_AMOUNT, 1))
 		if(!wrench_disassembly)
-			new frame(T)
+			new frame(table_turf)
 		else
-			new framestack(T, framestackamount)
+			new framestack(table_turf, framestackamount)
 	return ..()
 
 /obj/structure/table/rcd_vals(mob/user, obj/item/construction/rcd/the_rcd)
@@ -387,6 +388,7 @@
 	. = ..()
 	if(has_gravity())
 		playsound(src, 'sound/effects/roll.ogg', 100, TRUE)
+
 /*
  * Glass tables: fragile and break easily when a mob finds itself on a table
  */
@@ -597,7 +599,7 @@
 	icon = 'icons/obj/smooth_structures/reinforced_table.dmi'
 	icon_state = "reinforced_table-0"
 	base_icon_state = "reinforced_table"
-	deconstruction_ready = 0
+	deconstruction_ready = FALSE
 	buildstack = /obj/item/stack/sheet/plasteel
 	custom_materials = list(/datum/material/alloy/plasteel = SHEET_MATERIAL_AMOUNT)
 	max_integrity = 200

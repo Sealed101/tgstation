@@ -38,11 +38,11 @@
 			if(material.get_amount() < 1)
 				to_chat(user, span_warning("You need one [material.name] sheet to do this!"))
 				return
-			if(locate(/obj/structure/table) in drop_location())
+			if(locate(/obj/structure/table) in get_turf(src))
 				to_chat(user, span_warning("There's already a table built here!"))
 				return
 			to_chat(user, span_notice("You start adding [material.name] to [src]..."))
-			if(!do_after(user, 2 SECONDS, target = src) || !material.use(1) || (locate(/obj/structure/table) in drop_location()))
+			if(!do_after(user, 2 SECONDS, target = src) || !material.use(1) || (locate(/obj/structure/table) in get_turf(src)))
 				return
 			make_new_table(material.table_variant)
 		else if(istype(material, /obj/item/stack/sheet)) //minerals, wood and what have you
@@ -56,11 +56,11 @@
 			if(material.get_amount() < 1)
 				to_chat(user, span_warning("You need one [material.name] sheet to do this!"))
 				return
-			if(locate(/obj/structure/table) in drop_location())
+			if(locate(/obj/structure/table) in get_turf(src))
 				to_chat(user, span_warning("There's already a table built here!"))
 				return
 			to_chat(user, span_notice("You start adding [material.name] to [src]..."))
-			if(!do_after(user, 2 SECONDS, target = src) || !material.use(1) || (locate(/obj/structure/table) in drop_location()))
+			if(!do_after(user, 2 SECONDS, target = src) || !material.use(1) || (locate(/obj/structure/table) in get_turf(src)))
 				return
 			make_new_table(/obj/structure/table/greyscale, material_list)
 		return
@@ -68,7 +68,7 @@
 
 
 /obj/structure/table_frame/proc/make_new_table(table_type, custom_materials, carpet_type) //makes sure the new table made retains what we had as a frame
-	var/obj/structure/table/result_table = new table_type(drop_location())
+	var/obj/structure/table/result_table = new table_type(get_turf(src))
 	result_table.frame = type
 	result_table.framestack = framestack
 	result_table.framestackamount = framestackamount
@@ -84,7 +84,7 @@
 
 /obj/structure/table_frame/narsie_act()
 	. = ..()
-	new /obj/structure/table_frame/wood(drop_location())
+	new /obj/structure/table_frame/wood(get_turf(src))
 	qdel(src)
 
 /*
