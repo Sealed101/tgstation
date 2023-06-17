@@ -228,7 +228,7 @@
 				var/obj/item/item = x
 				AfterPutItemOnTable(item, user)
 			attack_item.atom_storage.remove_all(drop_location())
-			user.visible_message(span_notice("[user] empties [I] on [src]."))
+			user.visible_message(span_notice("[user] empties [attack_item] on [src]."))
 			return
 		// If the tray IS empty, continue on (tray will be placed on the table like other items)
 
